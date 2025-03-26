@@ -22,3 +22,4 @@ Route::get('/', function () {
 
 
 Route::get('/run-python', [PythonController::class, 'runPythonScript']);
+Route::get('/run-python', [PythonController::class, 'runPythonScript']);
