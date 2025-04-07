@@ -1,27 +1,47 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
 class PythonController extends Controller
 {
-    public function runPythonScript()
+    public function analyzeSkin(Request $request)
     {
-        // تحديد مسار سكربت Python
-        $pythonScriptPath = base_path('app/python_scripts/script.py');
-
-        // التأكد من أن الملف موجود
-        if (!file_exists($pythonScriptPath)) {
-            return response()->json(['error' => 'ملف Python غير موجود.'], 404);
+        // قراءة مسار الصورة من الطلبPYTHON_SCRIPT_PATH
+        $imagePath = $request->input('image_path');
+        
+        // سجّل المسار لمراجعة الأخطاء
+        Log::info('Image Path: ' . $imagePath);
+    
+        // التحقق من وجود المسار
+        if (!$imagePath || !file_exists($imagePath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الصورة غير موجودة أو مسارها غير صحيح'
+            ]);
         }
-
-        // تنفيذ سكربت Python باستخدام "python" بدلاً من "python3"
-        $escapedPath = escapeshellarg($pythonScriptPath);
-        $output = shell_exec("python $escapedPath 2>&1");
-
-        // التحقق من نجاح التنفيذ
-        if (empty($output)) {
-            return response()->json(['error' => 'فشل في تنفيذ سكربت Python.']);
+    
+        // تحديد مسار السكربت البايثون
+        $pythonScript = base_path('python_script/run.py');
+        $imagePathArg = escapeshellarg(realpath($imagePath));
+        
+        $command = escapeshellcmd("python \"$pythonScript\" $imagePathArg");
+        $output = shell_exec($command);
+        
+    
+        if ($output) {
+            $decoded = json_decode($output, true);
+            return response()->json([
+                'success' => true,
+                'result' => $decoded
+            ]);
         }
-
-        return response()->json(['output' => $output]);
+    
+        return response()->json([
+            'success' => false,
+            'message' => 'فشل في تشغيل تحليل البشرة'
+        ]);
     }
 }
